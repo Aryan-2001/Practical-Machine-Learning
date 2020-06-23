@@ -1,0 +1,92 @@
+-----------------
+PEER PROJECT
+-------------------
+Author - Aryan Gupta
+Date - 22-06-202
+------------------
+
+## Summary
+in this data since a lot of predictors are there we will remove many predictors and then use random forests to create a model to predict classe
+
+
+## Downloading the data
+```{r download , echo=TRUE}
+
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv" , "train.csv")
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv" , "test.csv")
+
+```
+
+after downloading we will read the data
+
+```{r read , echo =TRUE}
+
+training <- read.csv("train.csv")
+testing <- read.csv("test.csv")
+
+```
+
+Well look at the dimensions of training data
+
+```{r look , echo=TRUE}
+dim(training)
+names(training)
+```
+
+
+removing columns with NA since they cant be predictors
+
+```{r clean , echo =TRUE}
+training <-training[, colSums(is.na(training)) == 0]
+testing <- testing[, colSums(is.na(testing)) == 0]
+```
+
+## preprocessing
+
+```{r preprocess,echo=TRUE}
+classe<- training$classe
+trainRemove<- grepl("^X|timestamp|window", names(training))
+training<- training[, !trainRemove]
+training<- training[, sapply(training, is.numeric)]
+training$classe<- classe
+training$classe <- as.factor(training$classe)
+
+testRemove<- grepl("^X|timestamp|window", names(testing))
+testing<- testing[, !testRemove]
+testing<- testing[, sapply(testing, is.numeric)]
+
+```
+
+## making r forest
+
+```{r rf , echo=TRUE}
+
+library(caret)
+library(randomForest)
+set.seed(10)
+inTrain <- createDataPartition(training$classe , p =0.8 ,list = FALSE)
+rf <- randomForest(classe~. , training[inTrain,])
+
+```
+
+## cross validification and finding accuracy
+```{r crossval ,echo=TRUE}
+
+pred <- predict(rf , training[-inTrain,])
+pred <- as.factor(pred)
+confusionMatrix(training[-inTrain,]$classe , pred)
+```
+
+as you can see the accuracy in of 99.46% which is pretty high
+
+## Prediction
+
+```{r pred,echo=TRUE}
+
+pr <- predict(rf , testing)
+table(pr)
+pr
+```
+
+
+
